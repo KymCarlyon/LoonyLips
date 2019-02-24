@@ -1,39 +1,30 @@
  extends Node2D
 
 var player_words = [] 
-var template = [
-		{
-		"prompt" :["a name", "a thing", "a feeling", "some food"],
-		"story" :"A child called %s had a %s he/she was %s it and the child adored %s!"
-		},
-		{
-		"prompt" :["a fruit", "an unhealthy thing", "more fruits"],
-		"story" :"A %s ate a %s to make the world healthy and added %s!"
-		},
-		{
-		"prompt" :["An insect", "your insect with man on the end", "a feeling", "your insect with man on the end"],
-		"story" :"A boy was bitten by a/an %s and turned into %s he %s being %s"
-		},
-		{
-		"prompt" :["An insect", "your insect with girl on the end", "a feeling", "your insect with girl on the end" ],
-		"story" :"A girl was bitten by a/an %s and turned into %s she %s being %s!"
-		},
-		{
-		"prompt" :["You write in warm or cold", "a name","Yoy write in too cold or happy", "you write in he/she jumped in or so he/she went home"],
-		"story" :"The water was %s someone called %s was %s to jump in %s!!!!!!!!!!"
-		},
-		{
-		"prompt" :["you write in jump or sit", "you write in you not able to do magic or I was able to do magic", "If you wrote able to do magic write in surprised or shocked if you wrote no then write in annoyed or sad"],
-		"story" :"If you want to do magic you have too %s I tried and I was %s I was %s over it!"
-		}
-		] 
 var current_story
+var strings #the text that is shown to the player
 
 func _ready():
-		randomize()
-		current_story = template [randi() % template.size()]
-		$Blackboard/StoryText.text = ("Welcome to Loony Lips!\n\nWe're going to tell a story and have a lovely time!\nCan I have " + current_story.prompt[player_words.size()] + ", please")
+		set_random_story()
+		strings = get_from_json("other_strings.json")
+		$Blackboard/StoryText.text = strings ["intro_text"]
+		prompt_player()
 		$Blackboard/TextBox.text = ""
+		
+		
+func set_random_story():
+	var stories = get_from_json ("stories.json")
+	randomize()
+	current_story = stories [randi() % stories.size()]
+
+
+func get_from_json(filename):
+	var file = File.new() #FILE OBJECT
+	file.open (filename, File.READ) # assuming file exists
+	var text = file.get_as_text()
+	var data = parse_json(text)
+	file.close()
+	return data
 
 
 func _on_TextureButton_pressed():
@@ -46,6 +37,7 @@ func _on_TextureButton_pressed():
 func _on_TextBox_text_entered(new_text):
 	player_words.append(new_text)
 	$Blackboard/TextBox.text = ""
+	$Blackboard/StoryText.text = ""
 	check_player_word_length()
 	
 func is_story_done():
@@ -53,7 +45,8 @@ func is_story_done():
 	
 
 func prompt_player():
-	$Blackboard/StoryText.text = ("Can I have " +current_story.prompt[player_words.size()] + ", please?")
+	var next_prompt = current_story["prompt"][player_words.size()]
+	$Blackboard/StoryText.text += (strings["prompt"] % next_prompt)
 	
 func check_player_word_length():
 	if is_story_done():
@@ -63,7 +56,7 @@ func check_player_word_length():
 	
 func tell_story():
 		$Blackboard/StoryText.text = current_story.story % player_words
-		$Blackboard/TextureButton/ButtonLabel.text = "Again!"
+		$Blackboard/TextureButton/ButtonLabel.text = strings ["again"]
 		end_game()
 
 func end_game():
